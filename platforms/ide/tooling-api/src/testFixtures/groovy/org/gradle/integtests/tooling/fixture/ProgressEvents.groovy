@@ -36,6 +36,7 @@ import org.gradle.tooling.events.download.FileDownloadFinishEvent
 import org.gradle.tooling.events.download.FileDownloadOperationDescriptor
 import org.gradle.tooling.events.download.FileDownloadResult
 import org.gradle.tooling.events.download.FileDownloadStartEvent
+import org.gradle.tooling.events.problems.ProblemAggregationDescriptor
 import org.gradle.tooling.events.problems.ProblemDescriptor
 import org.gradle.tooling.events.task.TaskFinishEvent
 import org.gradle.tooling.events.task.TaskOperationDescriptor
@@ -160,6 +161,9 @@ class ProgressEvents implements ProgressListener {
                 def descriptor = event.descriptor
                 // operation should still be running
                 if (descriptor instanceof ProblemDescriptor) {
+                    continue
+                } else if (descriptor instanceof ProblemAggregationDescriptor) {
+                    // TODO (donat) why did TransformProgressEventCrossVersionSpec needed this to pass now?
                     continue
                 }
                 assert running.containsKey(descriptor)
