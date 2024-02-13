@@ -18,6 +18,9 @@ package org.gradle.launcher.daemon.protocol;
 
 import org.gradle.api.logging.LogLevel;
 import org.gradle.configuration.GradleLauncherMetaData;
+import org.gradle.internal.build.event.types.DefaultTaskDescriptor;
+import org.gradle.internal.build.event.types.DefaultTaskFinishedProgressEvent;
+import org.gradle.internal.build.event.types.DefaultTaskStartedProgressEvent;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
 import org.gradle.internal.invocation.BuildAction;
@@ -53,13 +56,16 @@ import org.gradle.launcher.daemon.diagnostics.DaemonDiagnostics;
 import org.gradle.launcher.exec.BuildActionParameters;
 import org.gradle.launcher.exec.BuildActionResult;
 import org.gradle.launcher.exec.DefaultBuildActionParameters;
+import org.gradle.tooling.internal.protocol.events.InternalOperationDescriptor;
 import org.gradle.tooling.internal.provider.serialization.SerializedPayload;
 import org.gradle.tooling.internal.provider.serialization.SerializedPayloadSerializer;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.gradle.internal.serialize.BaseSerializerFactory.FILE_SERIALIZER;
@@ -194,7 +200,40 @@ public class DaemonMessageSerializer {
 
         @Override
         public void write(Encoder encoder, BuildEvent buildEvent) throws Exception {
-            payloadSerializer.write(encoder, buildEvent.getPayload());
+            if (buildEvent.getPayload() instanceof DefaultTaskStartedProgressEvent) {
+                payloadSerializer.write(encoder, processTaskStartedEvent((DefaultTaskStartedProgressEvent) buildEvent.getPayload()));
+            }
+            else if (buildEvent.getPayload() instanceof DefaultTaskFinishedProgressEvent) {
+                payloadSerializer.write(encoder, processTaskFinishedEvent((DefaultTaskFinishedProgressEvent) buildEvent.getPayload()));
+            }
+            else {
+                payloadSerializer.write(encoder, buildEvent.getPayload());
+            }
+        }
+
+        private DefaultTaskStartedProgressEvent processTaskStartedEvent(DefaultTaskStartedProgressEvent event) {
+            return new DefaultTaskStartedProgressEvent(event.getEventTime(), truncateTaskDescriptorDependencies(event.getDescriptor()));
+        }
+
+        private DefaultTaskFinishedProgressEvent processTaskFinishedEvent(DefaultTaskFinishedProgressEvent event) {
+            return new DefaultTaskFinishedProgressEvent(event.getEventTime(), truncateTaskDescriptorDependencies(event.getDescriptor()), event.getResult());
+        }
+
+        private DefaultTaskDescriptor truncateTaskDescriptorDependencies(DefaultTaskDescriptor descriptor) {
+            Set<InternalOperationDescriptor> newDependencies = new LinkedHashSet<>(descriptor.getDependencies().size());
+            for (InternalOperationDescriptor dependency : descriptor.getDependencies()) {
+                if (dependency instanceof DefaultTaskDescriptor) {
+                    newDependencies.add(copyTaskDescriptorReplacingDependencies((DefaultTaskDescriptor) dependency, Collections.emptySet()));
+                }
+                else {
+                    newDependencies.add(dependency);
+                }
+            }
+            return copyTaskDescriptorReplacingDependencies(descriptor, newDependencies);
+        }
+
+        private DefaultTaskDescriptor copyTaskDescriptorReplacingDependencies(DefaultTaskDescriptor descriptor, Set<InternalOperationDescriptor> newDependencies) {
+            return new DefaultTaskDescriptor(descriptor.getId(), descriptor.getName(), descriptor.getTaskPath(), descriptor.getDisplayName(), descriptor.getParentId(), newDependencies, descriptor.getOriginPlugin());
         }
 
         @Override
