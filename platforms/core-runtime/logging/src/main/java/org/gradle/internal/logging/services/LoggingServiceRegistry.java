@@ -152,7 +152,7 @@ public abstract class LoggingServiceRegistry extends DefaultServiceRegistry {
         return outputEventListenerManager;
     }
 
-    protected UserInput createUserInput() {
+    protected DefaultUserInput createUserInput() {
         return userInput;
     }
 

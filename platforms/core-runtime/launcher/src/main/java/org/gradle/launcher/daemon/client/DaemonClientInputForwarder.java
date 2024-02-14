@@ -21,6 +21,7 @@ import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.dispatch.Dispatch;
 import org.gradle.internal.io.TextStream;
+import org.gradle.internal.logging.console.DefaultUserInput;
 import org.gradle.launcher.daemon.protocol.CloseInput;
 import org.gradle.launcher.daemon.protocol.ForwardInput;
 import org.gradle.launcher.daemon.protocol.InputMessage;
@@ -38,14 +39,25 @@ public class DaemonClientInputForwarder implements Stoppable {
 
     public static final int DEFAULT_BUFFER_SIZE = 8192;
     private final InputForwarder forwarder;
+    private final DefaultUserInput userInput;
 
-    public DaemonClientInputForwarder(InputStream inputStream, Dispatch<? super InputMessage> dispatch,
-                                      ExecutorFactory executorFactory) {
-        this(inputStream, dispatch, executorFactory, DEFAULT_BUFFER_SIZE);
+    public DaemonClientInputForwarder(
+        InputStream inputStream,
+        Dispatch<? super InputMessage> dispatch,
+        DefaultUserInput userInput,
+        ExecutorFactory executorFactory
+    ) {
+        this(inputStream, dispatch, userInput, executorFactory, DEFAULT_BUFFER_SIZE);
     }
 
-    public DaemonClientInputForwarder(InputStream inputStream, Dispatch<? super InputMessage> dispatch,
-                                      ExecutorFactory executorFactory, int bufferSize) {
+    public DaemonClientInputForwarder(
+        InputStream inputStream,
+        Dispatch<? super InputMessage> dispatch,
+        DefaultUserInput userInput,
+        ExecutorFactory executorFactory,
+        int bufferSize
+    ) {
+        this.userInput = userInput;
         TextStream handler = new ForwardTextStreamToConnection(dispatch);
         forwarder = new InputForwarder(inputStream, handler, executorFactory, bufferSize);
     }
