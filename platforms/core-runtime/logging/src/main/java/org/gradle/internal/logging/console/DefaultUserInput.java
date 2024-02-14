@@ -16,15 +16,21 @@
 
 package org.gradle.internal.logging.console;
 
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DefaultUserInput implements UserInput {
+    private final AtomicReference<UserInput> delegate = new AtomicReference<UserInput>();
+
     @Override
     public void forwardResponse() {
-        PrintStream stream = new PrintStream(new FileOutputStream(FileDescriptor.out));
-        stream.println("-> WOULD SEND RESPONSE");
-        stream.flush();
+        UserInput userInput = delegate.get();
+        if (userInput == null) {
+            throw new IllegalStateException("User input has not been initialized");
+        }
+        userInput.forwardResponse();
+    }
+
+    public void delegateTo(UserInput userInput) {
+        delegate.set(userInput);
     }
 }

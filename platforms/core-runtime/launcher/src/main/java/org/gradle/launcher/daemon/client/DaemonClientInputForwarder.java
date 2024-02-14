@@ -22,12 +22,16 @@ import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.dispatch.Dispatch;
 import org.gradle.internal.io.TextStream;
 import org.gradle.internal.logging.console.DefaultUserInput;
+import org.gradle.internal.logging.console.UserInput;
 import org.gradle.launcher.daemon.protocol.CloseInput;
 import org.gradle.launcher.daemon.protocol.ForwardInput;
 import org.gradle.launcher.daemon.protocol.InputMessage;
 
 import javax.annotation.Nullable;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.PrintStream;
 
 /**
  * Eagerly consumes from an input stream, sending line by line ForwardInput
@@ -60,6 +64,7 @@ public class DaemonClientInputForwarder implements Stoppable {
         this.userInput = userInput;
         TextStream handler = new ForwardTextStreamToConnection(dispatch);
         forwarder = new InputForwarder(inputStream, handler, executorFactory, bufferSize);
+        userInput.delegateTo(new ForwardingUserInput());
     }
 
     public void start() {
@@ -69,6 +74,15 @@ public class DaemonClientInputForwarder implements Stoppable {
     @Override
     public void stop() {
         forwarder.stop();
+    }
+
+    private static class ForwardingUserInput implements UserInput {
+        @Override
+        public void forwardResponse() {
+            PrintStream stream = new PrintStream(new FileOutputStream(FileDescriptor.out));
+            stream.print("-> WAITING FOR FOR RESPONSE: ");
+            stream.flush();
+        }
     }
 
     private static class ForwardTextStreamToConnection implements TextStream {
