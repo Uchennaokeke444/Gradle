@@ -202,11 +202,9 @@ public class DaemonMessageSerializer {
         public void write(Encoder encoder, BuildEvent buildEvent) throws Exception {
             if (buildEvent.getPayload() instanceof DefaultTaskStartedProgressEvent) {
                 payloadSerializer.write(encoder, processTaskStartedEvent((DefaultTaskStartedProgressEvent) buildEvent.getPayload()));
-            }
-            else if (buildEvent.getPayload() instanceof DefaultTaskFinishedProgressEvent) {
+            } else if (buildEvent.getPayload() instanceof DefaultTaskFinishedProgressEvent) {
                 payloadSerializer.write(encoder, processTaskFinishedEvent((DefaultTaskFinishedProgressEvent) buildEvent.getPayload()));
-            }
-            else {
+            } else {
                 payloadSerializer.write(encoder, buildEvent.getPayload());
             }
         }
@@ -224,8 +222,7 @@ public class DaemonMessageSerializer {
             for (InternalOperationDescriptor dependency : descriptor.getDependencies()) {
                 if (dependency instanceof DefaultTaskDescriptor) {
                     newDependencies.add(copyTaskDescriptorReplacingDependencies((DefaultTaskDescriptor) dependency, Collections.emptySet()));
-                }
-                else {
+                } else {
                     newDependencies.add(dependency);
                 }
             }
