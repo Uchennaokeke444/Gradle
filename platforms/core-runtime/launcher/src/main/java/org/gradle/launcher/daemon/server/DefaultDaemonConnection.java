@@ -268,8 +268,11 @@ public class DefaultDaemonConnection implements DaemonConnection {
             }
         }
 
-        /** @return true if the queue should stop processing. */
+        /**
+         * @return true if the queue should stop processing.
+         */
         protected abstract boolean doHandleCommand(final H handler, C command);
+
         // Called under lock
         protected abstract void doHandleDisconnect();
 
@@ -293,13 +296,11 @@ public class DefaultDaemonConnection implements DaemonConnection {
         @Override
         protected boolean doHandleCommand(final StdinHandler handler, InputMessage command) {
             try {
-                if (command instanceof UserResponse) {
-                    System.out.println("-> GOT RESPONSE!");
-                    return false;
-                }
                 if (command instanceof CloseInput) {
                     handler.onEndOfInput();
                     return true;
+                } else if (command instanceof UserResponse) {
+                    handler.onUserResponse((UserResponse) command);
                 } else {
                     handler.onInput((ForwardInput) command);
                 }

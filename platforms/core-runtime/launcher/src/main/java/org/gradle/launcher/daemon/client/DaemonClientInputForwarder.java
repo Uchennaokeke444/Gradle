@@ -29,10 +29,8 @@ import org.gradle.launcher.daemon.protocol.InputMessage;
 import org.gradle.launcher.daemon.protocol.UserResponse;
 
 import javax.annotation.Nullable;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.PrintStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Eagerly consumes from an input stream, sending line by line ForwardInput
@@ -84,19 +82,20 @@ public class DaemonClientInputForwarder implements Stoppable {
 
         @Override
         public void forwardResponse() {
-            PrintStream stream = new PrintStream(new FileOutputStream(FileDescriptor.out));
-            stream.print("-> WAITING FOR FOR RESPONSE: ");
-            stream.flush();
-            handler.forwardResponse = true;
+            handler.forwardResponse();
         }
     }
 
     private static class ForwardTextStreamToConnection implements TextStream {
         private final Dispatch<? super InputMessage> dispatch;
-        boolean forwardResponse;
+        private final AtomicBoolean forwardResponse = new AtomicBoolean();
 
         public ForwardTextStreamToConnection(Dispatch<? super InputMessage> dispatch) {
             this.dispatch = dispatch;
+        }
+
+        void forwardResponse() {
+            forwardResponse.set(true);
         }
 
         @Override
@@ -104,11 +103,11 @@ public class DaemonClientInputForwarder implements Stoppable {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Forwarding input to daemon: '{}'", input.replace("\n", "\\n"));
             }
-            if (forwardResponse) {
-                dispatch.dispatch(new UserResponse());
-                forwardResponse = false;
+            if (forwardResponse.compareAndSet(true, false)) {
+                dispatch.dispatch(new UserResponse(input));
+            } else {
+                dispatch.dispatch(new ForwardInput(input.getBytes()));
             }
-            dispatch.dispatch(new ForwardInput(input.getBytes()));
         }
 
         @Override

@@ -19,6 +19,7 @@ package org.gradle.api.internal.tasks.userinput;
 import javax.annotation.Nullable;
 
 public interface UserInputReader {
+    void putInput(@Nullable String text);
 
     /**
      * Returns a string read from the input until a line-separator, or null if input was interrupted.

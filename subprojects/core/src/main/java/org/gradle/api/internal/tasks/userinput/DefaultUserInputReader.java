@@ -16,51 +16,26 @@
 
 package org.gradle.api.internal.tasks.userinput;
 
-import org.gradle.api.UncheckedIOException;
+import org.gradle.internal.UncheckedException;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class DefaultUserInputReader implements UserInputReader {
+    private final BlockingQueue<String> input = new ArrayBlockingQueue<>(2);
 
-    private static final char UNIX_NEW_LINE = '\n';
-    private static final char WINDOWS_NEW_LINE = '\r';
-    private final Reader br = new InputStreamReader(System.in);
+    @Override
+    public void putInput(@Nullable String text) {
+        input.add(text);
+    }
 
     @Override
     public String readInput() {
-        StringBuilder out = new StringBuilder();
-
-        while (true) {
-            try {
-                int c = br.read();
-
-                if (isEOF(c)) {
-                    return null;
-                }
-
-                if (!isLineSeparator((char)c)) {
-                    out.append((char)c);
-                } else {
-                    if (c == WINDOWS_NEW_LINE && '\n' != (char)br.read()) {
-                        throw new RuntimeException("Unexpected");
-                    }
-                    break;
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+        try {
+            return input.take();
+        } catch (InterruptedException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
         }
-
-        return out.toString();
-    }
-
-    private boolean isEOF(int c) {
-        return c == 4 || c == -1;
-    }
-
-    private boolean isLineSeparator(char c) {
-        return c == UNIX_NEW_LINE || c == WINDOWS_NEW_LINE;
     }
 }

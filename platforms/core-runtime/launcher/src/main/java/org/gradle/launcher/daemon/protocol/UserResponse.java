@@ -19,4 +19,13 @@ package org.gradle.launcher.daemon.protocol;
 import java.io.Serializable;
 
 public class UserResponse extends InputMessage implements Serializable {
+    private final String response;
+
+    public UserResponse(String response) {
+        this.response = response;
+    }
+
+    public String getResponse() {
+        return response;
+    }
 }
