@@ -21,7 +21,6 @@ import org.gradle.internal.logging.LoggingManagerInternal;
 import org.gradle.internal.logging.config.LoggingSourceSystem;
 import org.gradle.internal.logging.config.LoggingSystemAdapter;
 import org.gradle.internal.logging.console.DefaultUserInput;
-import org.gradle.internal.logging.console.UserInput;
 import org.gradle.internal.logging.events.OutputEventListener;
 import org.gradle.internal.logging.sink.OutputEventListenerManager;
 import org.gradle.internal.logging.sink.OutputEventRenderer;

@@ -66,7 +66,7 @@ public class ForwardClientInput implements DaemonCommandAction {
 
             @Override
             public void onUserResponse(UserResponse input) {
-                inputReader.putInput(input.getResponse());
+                inputReader.putInput(new UserInputReader.TextResponse(input.getResponse()));
             }
 
             @Override
@@ -74,7 +74,7 @@ public class ForwardClientInput implements DaemonCommandAction {
                 LOGGER.info("Closing daemon's stdin at end of input.");
                 try {
                     inputSource.close();
-                    inputReader.putInput(null);
+                    inputReader.putInput(UserInputReader.END_OF_INPUT);
                 } catch (IOException e) {
                     LOGGER.warn("Problem closing output stream connected to replacement stdin", e);
                 } finally {

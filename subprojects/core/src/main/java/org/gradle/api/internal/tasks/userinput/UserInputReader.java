@@ -16,15 +16,35 @@
 
 package org.gradle.api.internal.tasks.userinput;
 
-import javax.annotation.Nullable;
-
 public interface UserInputReader {
-    void putInput(@Nullable String text);
+    void putInput(UserInput input);
 
     /**
      * Returns a string read from the input until a line-separator, or null if input was interrupted.
      */
-    @Nullable
-    String readInput();
+    UserInput readInput();
 
+    abstract class UserInput {
+        abstract String getText();
+    }
+
+    UserInput END_OF_INPUT = new UserInput() {
+        @Override
+        String getText() {
+            throw new IllegalStateException("No response available.");
+        }
+    };
+
+    class TextResponse extends UserInput {
+        private final String text;
+
+        public TextResponse(String text) {
+            this.text = text;
+        }
+
+        @Override
+        public String getText() {
+            return text;
+        }
+    }
 }

@@ -17,23 +17,22 @@
 package org.gradle.api.internal.tasks.userinput;
 
 import org.gradle.internal.UncheckedException;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class DefaultUserInputReader implements UserInputReader {
-    private final BlockingQueue<String> input = new ArrayBlockingQueue<>(2);
+    private final BlockingQueue<UserInput> queue = new ArrayBlockingQueue<>(2);
 
     @Override
-    public void putInput(@Nullable String text) {
-        input.add(text);
+    public void putInput(UserInput input) {
+        queue.add(input);
     }
 
     @Override
-    public String readInput() {
+    public UserInput readInput() {
         try {
-            return input.take();
+            return queue.take();
         } catch (InterruptedException e) {
             throw UncheckedException.throwAsUncheckedException(e);
         }
