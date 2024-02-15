@@ -21,6 +21,8 @@ import org.gradle.internal.service.scopes.ServiceScope;
 
 @ServiceScope(Scope.Global.class)
 public interface UserInputReader {
+    void startInput();
+
     void putInput(UserInput input);
 
     /**

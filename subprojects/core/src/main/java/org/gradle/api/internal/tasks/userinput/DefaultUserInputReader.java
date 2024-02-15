@@ -18,23 +18,52 @@ package org.gradle.api.internal.tasks.userinput;
 
 import org.gradle.internal.UncheckedException;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-
 public class DefaultUserInputReader implements UserInputReader {
-    private final BlockingQueue<UserInput> queue = new ArrayBlockingQueue<>(2);
+    private final Object lock = new Object();
+    private UserInput pending;
+    private boolean finished;
+
+    @Override
+    public void startInput() {
+        synchronized (lock) {
+            pending = null;
+            finished = false;
+        }
+    }
 
     @Override
     public void putInput(UserInput input) {
-        queue.add(input);
+        synchronized (lock) {
+            if (input == END_OF_INPUT) {
+                finished = true;
+                lock.notifyAll();
+            } else {
+                if (pending != null) {
+                    throw new IllegalStateException("Multiple responses received.");
+                }
+                pending = input;
+                lock.notifyAll();
+            }
+        }
     }
 
     @Override
     public UserInput readInput() {
-        try {
-            return queue.take();
-        } catch (InterruptedException e) {
-            throw UncheckedException.throwAsUncheckedException(e);
+        synchronized (lock) {
+            while (!finished && pending == null) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
+                }
+            }
+            if (pending != null) {
+                UserInput result = pending;
+                pending = null;
+                return result;
+            }
+
+            return END_OF_INPUT;
         }
     }
 }

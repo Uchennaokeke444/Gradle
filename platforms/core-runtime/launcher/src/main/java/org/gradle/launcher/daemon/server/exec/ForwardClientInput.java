@@ -53,6 +53,7 @@ public class ForwardClientInput implements DaemonCommandAction {
             throw UncheckedException.throwAsUncheckedException(e);
         }
 
+        inputReader.startInput();
         execution.getConnection().onStdin(new StdinHandler() {
             @Override
             public void onInput(ForwardInput input) {
