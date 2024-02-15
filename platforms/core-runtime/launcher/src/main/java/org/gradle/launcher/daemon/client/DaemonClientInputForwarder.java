@@ -26,6 +26,7 @@ import org.gradle.internal.logging.console.UserInput;
 import org.gradle.launcher.daemon.protocol.CloseInput;
 import org.gradle.launcher.daemon.protocol.ForwardInput;
 import org.gradle.launcher.daemon.protocol.InputMessage;
+import org.gradle.launcher.daemon.protocol.UserResponse;
 
 import javax.annotation.Nullable;
 import java.io.FileDescriptor;
@@ -43,7 +44,6 @@ public class DaemonClientInputForwarder implements Stoppable {
 
     public static final int DEFAULT_BUFFER_SIZE = 8192;
     private final InputForwarder forwarder;
-    private final DefaultUserInput userInput;
 
     public DaemonClientInputForwarder(
         InputStream inputStream,
@@ -61,10 +61,9 @@ public class DaemonClientInputForwarder implements Stoppable {
         ExecutorFactory executorFactory,
         int bufferSize
     ) {
-        this.userInput = userInput;
-        TextStream handler = new ForwardTextStreamToConnection(dispatch);
+        ForwardTextStreamToConnection handler = new ForwardTextStreamToConnection(dispatch);
         forwarder = new InputForwarder(inputStream, handler, executorFactory, bufferSize);
-        userInput.delegateTo(new ForwardingUserInput());
+        userInput.delegateTo(new ForwardingUserInput(handler));
     }
 
     public void start() {
@@ -77,16 +76,24 @@ public class DaemonClientInputForwarder implements Stoppable {
     }
 
     private static class ForwardingUserInput implements UserInput {
+        private final ForwardTextStreamToConnection handler;
+
+        public ForwardingUserInput(ForwardTextStreamToConnection handler) {
+            this.handler = handler;
+        }
+
         @Override
         public void forwardResponse() {
             PrintStream stream = new PrintStream(new FileOutputStream(FileDescriptor.out));
             stream.print("-> WAITING FOR FOR RESPONSE: ");
             stream.flush();
+            handler.forwardResponse = true;
         }
     }
 
     private static class ForwardTextStreamToConnection implements TextStream {
         private final Dispatch<? super InputMessage> dispatch;
+        boolean forwardResponse;
 
         public ForwardTextStreamToConnection(Dispatch<? super InputMessage> dispatch) {
             this.dispatch = dispatch;
@@ -96,6 +103,10 @@ public class DaemonClientInputForwarder implements Stoppable {
         public void text(String input) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Forwarding input to daemon: '{}'", input.replace("\n", "\\n"));
+            }
+            if (forwardResponse) {
+                dispatch.dispatch(new UserResponse());
+                forwardResponse = false;
             }
             dispatch.dispatch(new ForwardInput(input.getBytes()));
         }

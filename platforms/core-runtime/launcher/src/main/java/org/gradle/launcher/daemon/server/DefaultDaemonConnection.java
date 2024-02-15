@@ -32,6 +32,7 @@ import org.gradle.launcher.daemon.protocol.InputMessage;
 import org.gradle.launcher.daemon.protocol.Message;
 import org.gradle.launcher.daemon.protocol.OutputMessage;
 import org.gradle.launcher.daemon.protocol.Result;
+import org.gradle.launcher.daemon.protocol.UserResponse;
 import org.gradle.launcher.daemon.server.api.DaemonConnection;
 import org.gradle.launcher.daemon.server.api.StdinHandler;
 import org.slf4j.Logger;
@@ -292,6 +293,10 @@ public class DefaultDaemonConnection implements DaemonConnection {
         @Override
         protected boolean doHandleCommand(final StdinHandler handler, InputMessage command) {
             try {
+                if (command instanceof UserResponse) {
+                    System.out.println("-> GOT RESPONSE!");
+                    return false;
+                }
                 if (command instanceof CloseInput) {
                     handler.onEndOfInput();
                     return true;
