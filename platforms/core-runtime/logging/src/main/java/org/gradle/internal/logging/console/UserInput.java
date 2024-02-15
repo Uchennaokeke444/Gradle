@@ -16,6 +16,10 @@
 
 package org.gradle.internal.logging.console;
 
+import org.gradle.internal.service.scopes.Scope;
+import org.gradle.internal.service.scopes.ServiceScope;
+
+@ServiceScope(Scope.Global.class)
 public interface UserInput {
     /**
      * Reads a line of text and forwards it to the daemon.

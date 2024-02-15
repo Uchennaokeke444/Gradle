@@ -16,6 +16,10 @@
 
 package org.gradle.api.internal.tasks.userinput;
 
+import org.gradle.internal.service.scopes.Scope;
+import org.gradle.internal.service.scopes.ServiceScope;
+
+@ServiceScope(Scope.Global.class)
 public interface UserInputReader {
     void putInput(UserInput input);
 
